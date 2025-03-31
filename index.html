@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>記憶配對遊戲</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .game-title {
+            color: #6c5ce7;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .game-description {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .memory-game {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 0 auto;
+            max-width: 500px;
+        }
+
+        .memory-card {
+            height: 100px;
+            background: #6c5ce7;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+
+        .memory-card.flipped {
+            background: white;
+            color: #6c5ce7;
+            transform: rotateY(180deg);
+        }
+
+        .memory-card.matched {
+            background: #00b894;
+            cursor: default;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding: 15px;
+            background: #f1f1f1;
+            border-radius: 8px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #6c5ce7;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .reset-btn {
+            margin-top: 20px;
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(108, 92, 231, 0.4);
+        }
+
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            .memory-game {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .memory-card {
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>記憶配對遊戲</h1>
+        <p class="subtitle">測試你的記憶力！</p>
+    </header>
+
+    <main>
+        <div class="game-container">
+            <h2 class="game-title">記憶配對挑戰</h2>
+            <p class="game-description">
+                點擊卡片翻開它們，找出所有配對的卡片。用最少的移動次數完成遊戲！
+            </p>
+
+            <div class="memory-game" id="memoryGame">
+                <!-- 卡片會由JavaScript動態生成 -->
+            </div>
+
+            <div class="game-stats">
+                <div class="stat">
+                    <div class="stat-value" id="moves">0</div>
+                    <div class="stat-label">移動次數</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="matches">0</div>
+                    <div class="stat-label">配對成功</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="timer">0</div>
+                    <div class="stat-label">秒數</div>
+                </div>
+            </div>
+
+            <button class="reset-btn" id="resetBtn">重新開始</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 記憶遊戲 | 設計與開發</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const memoryGame = document.getElementById('memoryGame');
+            const movesDisplay = document.getElementById('moves');
+            const matchesDisplay = document.getElementById('matches');
+            const timerDisplay = document.getElementById('timer');
+            const resetBtn = document.getElementById('resetBtn');
+
+            const emojis = ['🍎', '🍌', '🍒', '🍓', '🍊', '🍋', '🍉', '🍇'];
+            const cards = [...emojis, ...emojis];
+
+            let hasFlippedCard = false;
+            let lockBoard = false;
+            let firstCard, secondCard;
+            let moves = 0;
+            let matches = 0;
+            let timer = 0;
+            let timerInterval;
+
+            // 初始化遊戲
+            function initGame() {
+                shuffleCards();
+                createBoard();
+                resetGameStats();
+                startTimer();
+            }
+
+            // 洗牌
+            function shuffleCards() {
+                for (let i = cards.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [cards[i], cards[j]] = [cards[j], cards[i]];
+                }
+            }
+
+            // 創建遊戲板
+            function createBoard() {
+                memoryGame.innerHTML = '';
+                cards.forEach((emoji, index) => {
+                    const card = document.createElement('div');
+                    card.classList.add('memory-card');
+                    card.dataset.emoji = emoji;
+                    card.dataset.index = index;
+                    card.addEventListener('click', flipCard);
+                    memoryGame.appendChild(card);
+                });
+            }
+
+            // 翻牌
+            function flipCard() {
+                if (lockBoard) return;
+                if (this === firstCard) return;
+
+                this.classList.add('flipped');
+                this.textContent = this.dataset.emoji;
+
+                if (!hasFlippedCard) {
+                    // 第一次點擊
+                    hasFlippedCard = true;
+                    firstCard = this;
+                    return;
+                }
+
+                // 第二次點擊
+                secondCard = this;
+                moves++;
+                movesDisplay.textContent = moves;
+                checkForMatch();
+            }
+
+            // 檢查是否匹配
+            function checkForMatch() {
+                const isMatch = firstCard.dataset.emoji === secondCard.dataset.emoji;
+
+                if (isMatch) {
+                    disableCards();
+                    matches++;
+                    matchesDisplay.textContent = matches;
+
+                    if (matches === emojis.length) {
+                        clearInterval(timerInterval);
+                        setTimeout(() => {
+                            alert(`恭喜！你以 ${moves} 步完成了遊戲！`);
+                        }, 500);
+                    }
+                } else {
+                    unflipCards();
+                }
+            }
+
+            // 禁用已匹配的卡片
+            function disableCards() {
+                firstCard.classList.add('matched');
+                secondCard.classList.add('matched');
+                firstCard.removeEventListener('click', flipCard);
+                secondCard.removeEventListener('click', flipCard);
+                resetBoard();
+            }
+
+            // 翻回不匹配的卡片
+            function unflipCards() {
+                lockBoard = true;
+
+                setTimeout(() => {
+                    firstCard.classList.remove('flipped');
+                    secondCard.classList.remove('flipped');
+                    firstCard.textContent = '';
+                    secondCard.textContent = '';
+                    resetBoard();
+                }, 1000);
+            }
+
+            // 重置遊戲板狀態
+            function resetBoard() {
+                [hasFlippedCard, lockBoard] = [false, false];
+                [firstCard, secondCard] = [null, null];
+            }
+
+            // 重置遊戲統計
+            function resetGameStats() {
+                moves = 0;
+                matches = 0;
+                timer = 0;
+                movesDisplay.textContent = moves;
+                matchesDisplay.textContent = matches;
+                timerDisplay.textContent = timer;
+                clearInterval(timerInterval);
+            }
+
+            // 開始計時器
+            function startTimer() {
+                clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    timer++;
+                    timerDisplay.textContent = timer;
+                }, 1000);
+            }
+
+            // 重新開始遊戲
+            resetBtn.addEventListener('click', () => {
+                resetGameStats();
+                initGame();
+            });
+
+            // 初始化遊戲
+            initGame();
+        });
+    </script>
+</body>
+
+</html>
